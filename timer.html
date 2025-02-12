@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Countdown Timer</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(45deg, green, blue);
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        
+        .countdown-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.5);
+        }
+        .countdown-title {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        .countdown-timer {
+            font-size: 3rem;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        
+        @media (max-width: 600px) {
+            .countdown-timer {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="countdown-container">
+        <div class="countdown-title" id="status">Live starting in</div>
+        <div id="countdown" class="countdown-timer">Loading...</div>
+    </div>
+    
+    <script>
+        async function getMatchStatus() {
+            try {
+                const response = await fetch("https://contact-ayushxshivam-for-your-own-links.vercel.app/ct.json");
+                const data = await response.json();
+                const matches = data.matches;
+                const now = new Date();
+                
+                const liveMatch = matches.find(match => {
+                    let [day, month, year] = match.date.split("-").map(Number);
+                    let [startHour, startMinute] = match.start_time.split(":" ).map(Number);
+                    let [endHour, endMinute] = match.end_time.split(":" ).map(Number);
+                    let startTime = new Date(year, month - 1, day, startHour, startMinute);
+                    let endTime = new Date(year, month - 1, day, endHour, endMinute);
+                    return now >= startTime && now <= endTime;
+                });
+                
+                if (liveMatch) {
+                    document.getElementById("status").innerText = "Live Match!";
+                    document.getElementById("countdown").innerText = "Reload the page to go live !!!";
+                    return;
+                }
+                
+                const upcomingMatch = matches.find(match => {
+                    let [day, month, year] = match.date.split("-").map(Number);
+                    let [hour, minute] = match.start_time.split(":" ).map(Number);
+                    let matchTime = new Date(year, month - 1, day, hour, minute);
+                    return matchTime > now;
+                });
+                
+                if (upcomingMatch) {
+                    startCountdown(upcomingMatch);
+                } else {
+                    document.getElementById("countdown").innerText = "No upcoming match";
+                }
+            } catch (error) {
+                console.error("Error fetching match data:", error);
+                document.getElementById("countdown").innerText = "Failed to load matches";
+            }
+        }
+        
+        function startCountdown(match) {
+            let [day, month, year] = match.date.split("-").map(Number);
+            let [hour, minute] = match.start_time.split(":" ).map(Number);
+            let matchTime = new Date(year, month - 1, day, hour, minute).getTime();
+            
+            function updateCountdown() {
+                let now = new Date().getTime();
+                let timeDiff = matchTime - now;
+                
+                if (timeDiff <= 0) {
+                    document.getElementById("countdown").innerText = "Match is live!";
+                    return;
+                }
+                
+                let days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+                let hours = Math.floor((timeDiff / (1000 * 60 * 60)) % 24);
+                let minutes = Math.floor((timeDiff / (1000 * 60)) % 60);
+                let seconds = Math.floor((timeDiff / 1000) % 60);
+                
+                document.getElementById("countdown").innerText = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+            }
+            
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
+        }
+        
+        getMatchStatus();
+    </script>
+</body>
+</html>
